@@ -1,0 +1,107 @@
+service: Topic
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  environment:
+    ACCESS_KEY: ${process.env.ACCESS_KEY}
+    SECRET_KEY: ${process.env.SECRET_KEY}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sns:CreateTopic
+        - sns:SetTopicAttributes
+        - sns:ListTopics
+        - sns:Publish
+        - sns:Subscribe
+        - sns:ListSubscriptionsByTopic
+        - sns:getTopicAttributes
+        - sns:DeleteTopic
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - sqs:CreateQueue
+        - sqs:SetQueueAttributes
+        - sqs:ListQueues
+        - sqs:SendMessage
+        - sqs:deletequeue
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+      Resource: "*"
+
+functions:
+  create-order:
+    handler: orderCreation.handler
+    events:
+      - httpApi:
+          path: /createOrder
+          method: post
+
+  order-processing:
+    handler: orderProcessing.handler
+    events:
+      - httpApi:
+          path: /processOrder
+          method: get
+
+  get-queue-messages:
+    handler: getQueueMessages.handler
+    events:
+      - httpApi:
+          path: /getQueueMessages
+          method: get
+  
+  get-topics:
+    handler: getTopic.handler
+    events:
+      - httpApi:
+          path: /getTopic
+          method: get
+  
+  get-queues:
+    handler: getQueue.handler
+    events:
+      - httpApi:
+          path: /getQueue
+          method: get
+
+  delete-queues:
+    handler: deleteQueue.handler
+    events:
+      - httpApi:
+          path: /deleteQueue
+          method: delete
+  
+  delete-topic:
+    handler: deleteTopic.handler
+    events:
+      - httpApi:
+          path: /deleteTopic
+          method: delete
+  
+  get-subcriber-list:
+    handler: getSubscriber.handler
+    events:
+      - httpApi:
+          path: /getSubscriber
+          method: get
+
+  create-queue:
+    handler: createQueue.handler
+    events:
+      - httpApi:
+          path: /createQueue
+          method: post
+  
+  create-topic:
+    handler: createTopic.handler
+    events:
+      - httpApi:
+          path: /createTopic
+          method: post
