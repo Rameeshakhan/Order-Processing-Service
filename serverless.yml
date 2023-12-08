@@ -8,43 +8,65 @@ provider:
     ACCESS_KEY: ${process.env.ACCESS_KEY}
     SECRET_KEY: ${process.env.SECRET_KEY}
   iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - sns:CreateTopic
-        - sns:SetTopicAttributes
-        - sns:ListTopics
-        - sns:Publish
-        - sns:Subscribe
-        - sns:ListSubscriptionsByTopic
-        - sns:getTopicAttributes
-        - sns:DeleteTopic
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - sqs:CreateQueue
-        - sqs:SetQueueAttributes
-        - sqs:ListQueues
-        - sqs:SendMessage
-        - sqs:deletequeue
-        - sqs:ReceiveMessage
-        - sqs:DeleteMessage
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - ses:SendEmail
-        - ses:SendRawEmail
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - dynamodb:DescribeTable
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:CreateTable
-      Resource: "arn:aws:dynamodb:us-east-1:076593849243:table/OrderList"
+  - Effect: Allow
+    Action:
+        - lambda:InvokeFunction
+    Resource: "*"
+
+  - Effect: Allow
+    Action:
+      - sns:CreateTopic
+      - sns:SetTopicAttributes
+      - sns:ListTopics
+      - sns:Publish
+      - sns:Subscribe
+      - sns:ListSubscriptionsByTopic
+      - sns:GetTopicAttributes
+      - sns:DeleteTopic
+    Resource: "*"
+
+  - Effect: Allow
+    Action:
+      - sqs:CreateQueue
+      - sqs:SetQueueAttributes
+      - sqs:ListQueues
+      - sqs:SendMessage
+      - sqs:DeleteQueue
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+    Resource: "*"
+
+  - Effect: Allow
+    Action:
+      - ses:SendEmail
+      - ses:SendRawEmail
+    Resource: "*"
+
+  - Effect: Allow
+    Action:
+      - dynamodb:DescribeTable
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      - dynamodb:UpdateItem
+      - dynamodb:DeleteItem
+      - dynamodb:CreateTable
+      - dynamodb:ListTables
+      - dynamodb:DeleteTable
+    Resource: "*"
+
+  - Effect: Allow
+    Action:
+      - dynamodb:DescribeTable
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      - dynamodb:UpdateItem
+      - dynamodb:DeleteItem
+    Resource: "arn:aws:dynamodb:us-east-1:076593849243:table/OrderListTable"
+
 
 functions:
   create-order:
@@ -56,63 +78,80 @@ functions:
 
   order-processing:
     handler: orderProcessing.handler
+  
+  get-Notification:
+    handler: getNotifications.handler
     events:
       - httpApi:
-          path: /processOrder
+          path: /getNoti
           method: get
 
-  get-queue-messages:
-    handler: getQueueMessages.handler
-    events:
-      - httpApi:
-          path: /getQueueMessages
-          method: get
-  
-  get-topics:
-    handler: getTopic.handler
-    events:
-      - httpApi:
-          path: /getTopic
-          method: get
-  
-  get-queues:
-    handler: getQueue.handler
-    events:
-      - httpApi:
-          path: /getQueue
-          method: get
+  # order-processing:
+  #   handler: orderProcessing.handler
+  #   events:
+  #     - httpApi:
+  #         path: /processOrder
+  #         method: get
 
-  delete-queues:
-    handler: deleteQueue.handler
-    events:
-      - httpApi:
-          path: /deleteQueue
-          method: delete
+  # get-queue-messages:
+  #   handler: getQueueMessages.handler
+  #   events:
+  #     - httpApi:
+  #         path: /getQueueMessages
+  #         method: get
   
-  delete-topic:
-    handler: deleteTopic.handler
-    events:
-      - httpApi:
-          path: /deleteTopic
-          method: delete
+  # get-topics:
+  #   handler: getTopic.handler
+  #   events:
+  #     - httpApi:
+  #         path: /getTopic
+  #         method: get
   
-  get-subcriber-list:
-    handler: getSubscriber.handler
-    events:
-      - httpApi:
-          path: /getSubscriber
-          method: get
+  # get-queues:
+  #   handler: getQueue.handler
+  #   events:
+  #     - httpApi:
+  #         path: /getQueue
+  #         method: get
 
-  create-queue:
-    handler: createQueue.handler
-    events:
-      - httpApi:
-          path: /createQueue
-          method: post
+  # delete-queues:
+  #   handler: deleteQueue.handler
+  #   events:
+  #     - httpApi:
+  #         path: /deleteQueue
+  #         method: delete
   
-  create-topic:
-    handler: createTopic.handler
+  # delete-topic:
+  #   handler: deleteTopic.handler
+  #   events:
+  #     - httpApi:
+  #         path: /deleteTopic
+  #         method: delete
+  
+  # get-subcriber-list:
+  #   handler: getSubscriber.handler
+  #   events:
+  #     - httpApi:
+  #         path: /getSubscriber
+  #         method: get
+
+  # create-queue:
+  #   handler: createQueue.handler
+  #   events:
+  #     - httpApi:
+  #         path: /createQueue
+  #         method: post
+  
+  # create-topic:
+  #   handler: createTopic.handler
+  #   events:
+  #     - httpApi:
+  #         path: /createTopic
+  #         method: post
+
+  fetch-data:
+    handler: FetchData.handler
     events:
       - httpApi:
-          path: /createTopic
-          method: post
+          path: /fetchData
+          method: get

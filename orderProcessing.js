@@ -1,101 +1,95 @@
-// orderProcessing.js
 const AWS = require('aws-sdk');
 const sqs = new AWS.SQS();
 const sns = new AWS.SNS();
 const ses = new AWS.SES();
+const dynamoDB = new AWS.DynamoDB.DocumentClient();
 require("dotenv").config();
 
-const sendSNSNotification = async (order) => {
-    return sns.publish({
-        TopicArn: process.env.TOPIC_ARN,
-        Message: `Order completed: ${JSON.stringify(order)}`
-    }).promise();
-};
+const queueUrl = process.env.QUEUE_URL;
+const topicArn = process.env.TOPIC_ARN;
+const fromEmailAddress = process.env.SENDER_EMAIL;
+const tableName = process.env.DYNAMODB_TABLE;
 
-const sendEmailNotification = async (order) => {
-    const emailParams = {
-        Destination: {
-            ToAddresses: ['rameeshakhan75@gmail.com']
-        },
-        Message: {
-            Body: {
-                Text: {
-                    Data: `Your order has been completed: ${JSON.stringify(order)}`
-                }
-            },
-            Subject: {
-                Data: 'Order Completion Notification'
+// Notify user via SES email
+const emailParams = {
+    Destination: {
+        ToAddresses: ['rameeshakhan75@gmail.com']
+    },
+    Message: {
+        Body: {
+            Text: {
+                Data: `Your order ${orderId} has been completed.`
             }
         },
-        Source: process.env.SENDER_EMAIL
-    };
-
-    return ses.sendEmail(emailParams).promise();
+        Subject: {
+            Data: 'Order Completion Notification'
+        }
+    },
+    Source: fromEmailAddress
 };
 
-const deleteMessageFromQueue = async (receiptHandle) => {
-    return sqs.deleteMessage({
-        QueueUrl: process.env.QUEUE_URL,
-        ReceiptHandle: receiptHandle
-    }).promise();
+// Notify user via SNS (optional)
+const snsParams = {
+    Message: `Your order ${orderData.productName ,orderData.quantity } has been completed.`,
+    Subject: 'Order Completion Notification',
+    TopicArn: topicArn
 };
 
-const orderProcessingHandler = async (event) => {
+const orderProcessing = async (event, context) => {
     try {
-        let continueProcessing = true;
-        let processedMessages = 0;
+        // Poll messages from SQS queue
+        const params = {
+            QueueUrl: queueUrl,
+            MaxNumberOfMessages: 1,
+            WaitTimeSeconds: 20 // Long polling
+        };
 
-        while (continueProcessing) {
-            // Retrieve messages from the SQS queue
-            const { Messages } = await sqs.receiveMessage({
-                QueueUrl: process.env.QUEUE_URL,
-                MaxNumberOfMessages: 1,
-                VisibilityTimeout: 30,
-                WaitTimeSeconds: 0
-            }).promise();
+        const data = await sqs.receiveMessage(params).promise();
 
-            if (Messages && Messages.length > 0) {
-                const order = JSON.parse(Messages[0].Body);
+        if (data.Messages) {
+            // Process each message
+            for (const message of data.Messages) {
+                // Your processing logic here
+                const orderData = JSON.parse(message.Body);
 
-                // Simulate order processing (update status to 'completed')
-                order.status = 'completed';
+                // Assuming you change the status to complete in your processing logic
+                const orderId = orderData.orderId;
+                console.log(`Order ${orderId} processed successfully`);
 
-                try {
-                    // Send order completion notification using SNS
-                    await sendSNSNotification(order);
+                // Change the order status (replace this with your actual logic)
+                // Example: Set the order status to "COMPLETE"
+                orderData.status = 'COMPLETE';
 
-                    // Send email notification using SES
-                    await sendEmailNotification(order);
+                // Save completed order to DynamoDB
+                await saveOrderToDynamoDB(orderData);
 
-                    // Delete the processed message from the queue
-                    await deleteMessageFromQueue(Messages[0].ReceiptHandle);
+                await ses.sendEmail(emailParams).promise();
 
-                    processedMessages += 1;
+                await sns.publish(snsParams).promise();
 
-                    // Log processed order details to the console
-                    console.log(`Order processed: ${JSON.stringify(order)}`);
-                } catch (error) {
-                    console.error('Error processing order:', error);
-                }
-            } else {
-                // No more messages in the queue
-                continueProcessing = false;
+                // Delete the processed message from the queue
+                await sqs.deleteMessage({
+                    QueueUrl: queueUrl,
+                    ReceiptHandle: message.ReceiptHandle
+                }).promise();
             }
         }
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ message: `Processed ${processedMessages} order(s)` })
-        };
+        return { statusCode: 200, body: 'Processing complete.' };
     } catch (error) {
-        console.error('Error processing orders:', error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: 'Internal Server Error' })
-        };
+        console.error('Error:', error);
+        return { statusCode: 500, body: 'Internal Server Error' };
     }
 };
 
+async function saveOrderToDynamoDB(orderData) {
+    const params = {
+        TableName: "OrderListTable",
+        Item: orderData
+    };
+    await dynamoDB.put(params).promise();
+}
+
 module.exports = {
-    handler: orderProcessingHandler,
-};
+    handler : orderProcessing
+}
