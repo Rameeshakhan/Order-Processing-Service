@@ -8,32 +8,7 @@ require("dotenv").config();
 const queueUrl = process.env.QUEUE_URL;
 const topicArn = process.env.TOPIC_ARN;
 const fromEmailAddress = process.env.SENDER_EMAIL;
-const tableName = process.env.DYNAMODB_TABLE;
-
-// Notify user via SES email
-const emailParams = {
-    Destination: {
-        ToAddresses: ['rameeshakhan75@gmail.com']
-    },
-    Message: {
-        Body: {
-            Text: {
-                Data: `Your order ${orderId} has been completed.`
-            }
-        },
-        Subject: {
-            Data: 'Order Completion Notification'
-        }
-    },
-    Source: fromEmailAddress
-};
-
-// Notify user via SNS (optional)
-const snsParams = {
-    Message: `Your order ${orderData.productName ,orderData.quantity } has been completed.`,
-    Subject: 'Order Completion Notification',
-    TopicArn: topicArn
-};
+const tableName = "OrderListTable1";
 
 const orderProcessing = async (event, context) => {
     try {
@@ -41,7 +16,7 @@ const orderProcessing = async (event, context) => {
         const params = {
             QueueUrl: queueUrl,
             MaxNumberOfMessages: 1,
-            WaitTimeSeconds: 20 // Long polling
+            WaitTimeSeconds: 20 //long polling
         };
 
         const data = await sqs.receiveMessage(params).promise();
@@ -49,21 +24,42 @@ const orderProcessing = async (event, context) => {
         if (data.Messages) {
             // Process each message
             for (const message of data.Messages) {
-                // Your processing logic here
+        
                 const orderData = JSON.parse(message.Body);
 
-                // Assuming you change the status to complete in your processing logic
-                const orderId = orderData.orderId;
-                console.log(`Order ${orderId} processed successfully`);
+                const orderId = orderData.id;
+                console.log(`Order ${orderData.productName} processed successfully`);
 
-                // Change the order status (replace this with your actual logic)
-                // Example: Set the order status to "COMPLETE"
                 orderData.status = 'COMPLETE';
 
-                // Save completed order to DynamoDB
                 await saveOrderToDynamoDB(orderData);
 
+                const emailParams = {
+                    Destination: {
+                        ToAddresses: ["address@gmail.com"]
+                    },
+                    Message: {
+                        Body: {
+                            Html: {
+                                Data: `<p>Your order ${orderData.productName} has been completed.</p>`
+                            }
+                        },
+                        Subject: {
+                            Data: 'Order Completion Notification'
+                        }
+                    },
+                    Source: fromEmailAddress
+                };
+                
+
                 await ses.sendEmail(emailParams).promise();
+
+                const snsParams = {
+                    Message: `Your order ${orderData.productName, orderData.quantity} has been completed.`,
+                    Subject: 'Order Completion Notification',
+                    TopicArn: topicArn
+                };
+
 
                 await sns.publish(snsParams).promise();
 
@@ -84,12 +80,25 @@ const orderProcessing = async (event, context) => {
 
 async function saveOrderToDynamoDB(orderData) {
     const params = {
-        TableName: "OrderListTable",
-        Item: orderData
+        TableName: tableName,
+        Item: {
+            id: orderData.id, 
+            productName: orderData.productName,
+            quantity: orderData.quantity,
+            status: orderData.status 
+        }
     };
-    await dynamoDB.put(params).promise();
+
+    try {
+        await dynamoDB.put(params).promise();
+        console.log('Order saved to DynamoDB successfully');
+    } catch (error) {
+        console.error('Error saving order to DynamoDB:', error);
+        throw error; 
+    }
 }
 
+
 module.exports = {
-    handler : orderProcessing
+    handler: orderProcessing
 }

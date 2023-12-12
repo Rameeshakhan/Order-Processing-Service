@@ -5,7 +5,7 @@ const fetchData = async (event) => {
   try {
     // Define parameters for DynamoDB scan
     const params = {
-      TableName: 'OrderListTable',
+      TableName: 'OrderListTable1',
     };
 
     // Fetch all data from DynamoDB

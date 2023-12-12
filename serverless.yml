@@ -7,6 +7,8 @@ provider:
   environment:
     ACCESS_KEY: ${process.env.ACCESS_KEY}
     SECRET_KEY: ${process.env.SECRET_KEY}
+    API_KEY: ${process.env.API_KEY}
+
   iamRoleStatements:
   - Effect: Allow
     Action:
@@ -52,9 +54,10 @@ provider:
       - dynamodb:UpdateItem
       - dynamodb:DeleteItem
       - dynamodb:CreateTable
-      - dynamodb:ListTables
+      - dynamodb:ListTables 
       - dynamodb:DeleteTable
     Resource: "*"
+
 
   - Effect: Allow
     Action:
@@ -65,9 +68,12 @@ provider:
       - dynamodb:PutItem
       - dynamodb:UpdateItem
       - dynamodb:DeleteItem
-    Resource: "arn:aws:dynamodb:us-east-1:076593849243:table/OrderListTable"
+      - dynamodb:DeleteTable
+      - dynamodb:DescribeTable
+      - dynamodb:CreateTable
+    Resource: "arn:aws:dynamodb:us-east-1:076593849243:table/OrderListTable1" 
 
-
+  
 functions:
   create-order:
     handler: orderCreation.handler
@@ -75,83 +81,107 @@ functions:
       - httpApi:
           path: /createOrder
           method: post
+  
+  create-table:
+    handler: CreateTable.handler
+    events:
+      - httpApi:
+          path: /createTable
+          method: post
 
   order-processing:
     handler: orderProcessing.handler
-  
+
+  create-Table:
+    handler: dynamoDbConfig.handler
+
   get-Notification:
-    handler: getNotifications.handler
+    handler: Extras/getNotifications.handler
     events:
       - httpApi:
           path: /getNoti
           method: get
 
+  fetch-data:
+    handler: Extras/FetchData.handler
+    events:
+      - httpApi:
+          path: /fetchData
+          method: get
+
+  fetch-tables:
+    handler: ListTables.handler
+    events:
+      - httpApi:
+          path: /fetchTables
+          method: get
+
+  delete-data:
+    handler: Extras/DeleteData.handler
+    events:
+      - httpApi:
+          path: /DeleteData
+          method: delete
+          
   # order-processing:
-  #   handler: orderProcessing.handler
+  #   handler: Extras/orderProcessing.handler
   #   events:
   #     - httpApi:
   #         path: /processOrder
   #         method: get
 
-  # get-queue-messages:
-  #   handler: getQueueMessages.handler
-  #   events:
-  #     - httpApi:
-  #         path: /getQueueMessages
-  #         method: get
-  
-  # get-topics:
-  #   handler: getTopic.handler
-  #   events:
-  #     - httpApi:
-  #         path: /getTopic
-  #         method: get
-  
-  # get-queues:
-  #   handler: getQueue.handler
-  #   events:
-  #     - httpApi:
-  #         path: /getQueue
-  #         method: get
-
-  # delete-queues:
-  #   handler: deleteQueue.handler
-  #   events:
-  #     - httpApi:
-  #         path: /deleteQueue
-  #         method: delete
-  
-  # delete-topic:
-  #   handler: deleteTopic.handler
-  #   events:
-  #     - httpApi:
-  #         path: /deleteTopic
-  #         method: delete
-  
-  # get-subcriber-list:
-  #   handler: getSubscriber.handler
-  #   events:
-  #     - httpApi:
-  #         path: /getSubscriber
-  #         method: get
-
-  # create-queue:
-  #   handler: createQueue.handler
-  #   events:
-  #     - httpApi:
-  #         path: /createQueue
-  #         method: post
-  
-  # create-topic:
-  #   handler: createTopic.handler
-  #   events:
-  #     - httpApi:
-  #         path: /createTopic
-  #         method: post
-
-  fetch-data:
-    handler: FetchData.handler
+  get-queue-messages:
+    handler: Extras/getQueueMessages.handler
     events:
       - httpApi:
-          path: /fetchData
+          path: /getQueueMessages
           method: get
+  
+  get-topics:
+    handler: Extras/getTopic.handler
+    events:
+      - httpApi:
+          path: /getTopic
+          method: get
+  
+  get-queues:
+    handler: Extras/getQueue.handler
+    events:
+      - httpApi:
+          path: /getQueue
+          method: get
+
+  delete-queues:
+    handler: Extras/deleteQueue.handler
+    events:
+      - httpApi:
+          path: /deleteQueue
+          method: delete
+  
+  delete-topic:
+    handler: Extras/deleteTopic.handler
+    events:
+      - httpApi:
+          path: /deleteTopic
+          method: delete
+  
+  get-subcriber-list:
+    handler: Extras/getSubscriber.handler
+    events:
+      - httpApi:
+          path: /getSubscriber
+          method: get
+
+  create-queue:
+    handler: Extras/createQueue.handler
+    events:
+      - httpApi:
+          path: /createQueue
+          method: post
+  
+  create-topic:
+    handler: Extras/createTopic.handler
+    events:
+      - httpApi:
+          path: /createTopic
+          method: post

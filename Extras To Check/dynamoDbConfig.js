@@ -1,10 +1,14 @@
 const AWS = require('aws-sdk');
 require('dotenv').config();
 
-const dynamoDB = new AWS.DynamoDB();
+const dynamoDB = new AWS.DynamoDB({
+  accessKeyId: process.env.ACCESS_KEY,
+  secretAccessKey: process.env.SECRET_KEY,
+  region: "us-east-1",
+});
 
 const createTable = async () => {
-  const tableName = 'OrderListTable';
+  const tableName = 'OrderListTable1';
 
   // Check if the table already exists
   const existingTables = await dynamoDB.listTables().promise();
@@ -13,14 +17,13 @@ const createTable = async () => {
     return;
   }
 
-  // Table does not exist, proceed with creation
   const params = {
     TableName: tableName,
     KeySchema: [
-      { AttributeName: 'orderId', KeyType: 'HASH' }, // Partition key
+      { AttributeName: 'orderId', KeyType: 'HASH' },
     ],
     AttributeDefinitions: [
-      { AttributeName: 'orderId', AttributeType: 'S' }, // S for string, you can choose a different type
+      { AttributeName: 'orderId', AttributeType: 'S' }, 
     ],
     ProvisionedThroughput: {
       ReadCapacityUnits: 5,
@@ -36,7 +39,6 @@ const createTable = async () => {
   }
 };
 
-// Call the createTable function
-createTable();
-
-module.exports = new AWS.DynamoDB.DocumentClient();
+module.exports = {
+  handler: createTable
+};

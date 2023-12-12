@@ -1,14 +1,29 @@
+require('dotenv').config();
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 const sqs = new AWS.SQS();
 const lambda = new AWS.Lambda();
-require('dotenv').config();
+
 
 const orderCreationHandler = async (event) => {
+
+    const apiKeyInHeader = event.headers.apikey;
+    const apiKeyValue = process.env.API_KEY
+
+    console.log("asodaksodksodkasodckadsc", apiKeyValue)
+
+    if (apiKeyInHeader !== apiKeyValue) {
+        return {
+            statusCode: 401,
+            body: JSON.stringify({ error: 'Unauthorized' }),
+        };
+    }
+
     const { productName, quantity, price, status = 'pending' } = JSON.parse(event.body);
+
     try {
         const order = {
-            orderId: uuidv4(),
+            id: uuidv4(),
             productName,
             quantity,
             price,
